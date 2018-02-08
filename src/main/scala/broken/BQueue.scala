@@ -1,0 +1,5 @@
+package broken
+
+class BQueue {
+
+}
