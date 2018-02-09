@@ -3,10 +3,13 @@ package threadrun
 object Trivial3 {
 
   class MyJob extends Runnable {
+    /*@volatile INSUFFICIENT, creates visibility, but not atomicity*/
     var count = 0;
 
     override def run(): Unit = {
-      for (x <- 1 to 10000) count += 1
+      for (x <- 1 to 10000) this.synchronized {
+        count += 1
+      }
       println(s"count in ${Thread.currentThread().getName} is $count")
     }
   }

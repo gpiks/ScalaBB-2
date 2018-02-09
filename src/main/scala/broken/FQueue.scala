@@ -1,44 +1,56 @@
 package broken
 
+import java.util.concurrent.locks.ReentrantLock
+
 import scala.reflect.ClassTag
-class BQueue[T](implicit t: ClassTag[T]) {
+
+class FQueue[T](implicit t: ClassTag[T]) {
   private val QSIZE = 10
   private val buffer = new Array[T](QSIZE)
   private var count = 0
+  private val lock = new ReentrantLock
+  private val notFull = lock.newCondition
+  private val notEmpty = lock.newCondition
 
   def take: T = {
-    this.synchronized {
+    lock.lock;
+    try {
       while (count == 0) {
-        this.wait()
+        notEmpty.await
       }
       count -= 1
       val rv = buffer(0)
       System.arraycopy(buffer, 1, buffer, 0, count)
-      this.notify() // notifyAll is horribly non-scalable
+      notFull.signal
       rv
+    } finally {
+      lock.unlock
     }
   }
 
   def put(item: T): Unit = {
-    this.synchronized {
+    lock.lock;
+    try {
       while (count == QSIZE) {
-        this.wait()
+        notFull.await
       }
       buffer(count) = item
       count += 1
-      this.notify() // notifyAll is horribly non-scalable
+      notEmpty.signal
+    } finally {
+      lock.unlock
     }
   }
 }
 
-object TestBQueue {
+object TestFQueue {
   def main(args: Array[String]): Unit = {
-    val q = new BQueue[Int]
+    val q = new FQueue[Int]
     val producer: Runnable = () => {
       for (x <- 0 until 1000) {
         if (x < 300) Thread.sleep(1)
         q put x
-        //        if (x == 998) q put x
+//        if (x == 998) q put x // test with bad data!
       }
       println("All data put, producer quitting")
     }

@@ -2,7 +2,7 @@ package threadrun
 
 object Stopper {
   def main(args: Array[String]): Unit = {
-    var stop: Boolean = false
+    @volatile var stop: Boolean = false
 
     new Thread(()=>{
       while(!stop) {}
